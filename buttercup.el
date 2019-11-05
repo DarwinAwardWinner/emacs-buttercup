@@ -1369,12 +1369,12 @@ Do not change the global value.")
 
 (defun buttercup--run-suite (suite)
   "Run SUITE. A suite is a sequence of suites and specs."
-  (buttercup--set-start-time suite)
   (let* ((buttercup--before-each (append buttercup--before-each
                                          (buttercup-suite-before-each suite)))
          (buttercup--after-each (append (buttercup-suite-after-each suite)
                                         buttercup--after-each)))
     (funcall buttercup-reporter 'suite-started suite)
+    (buttercup--set-start-time suite)
     (dolist (f (buttercup-suite-before-all suite))
       (buttercup--update-with-funcall suite f))
     (dolist (sub (buttercup-suite-children suite))
@@ -1389,21 +1389,21 @@ Do not change the global value.")
     (funcall buttercup-reporter 'suite-done suite)))
 
 (defun buttercup--run-spec (spec)
-  (buttercup--set-start-time spec)
   (unwind-protect
       (progn
         ;; Kill any previous warning buffer, just in case
         (when (get-buffer buttercup-warning-buffer-name)
           (kill-buffer buttercup-warning-buffer-name))
         (get-buffer-create buttercup-warning-buffer-name)
-
         (funcall buttercup-reporter 'spec-started spec)
+        (buttercup--set-start-time spec)
         (buttercup-with-cleanup
          (dolist (f buttercup--before-each)
            (buttercup--update-with-funcall spec f))
          (buttercup--update-with-funcall spec (buttercup-spec-function spec))
          (dolist (f buttercup--after-each)
            (buttercup--update-with-funcall spec f)))
+        (buttercup--set-end-time spec)
         (funcall buttercup-reporter 'spec-done spec)
         ;; Display warnings that were issued while running the the
         ;; spec, if any
@@ -1414,8 +1414,7 @@ Do not change the global value.")
               (buffer-string)
               'yellow)))))
     (when (get-buffer buttercup-warning-buffer-name)
-      (kill-buffer buttercup-warning-buffer-name))
-    (buttercup--set-end-time spec)))
+      (kill-buffer buttercup-warning-buffer-name))))
 
 (defun buttercup--update-with-funcall (suite-or-spec function &rest args)
   "Update SUITE-OR-SPEC with the result of calling FUNCTION with ARGS.
